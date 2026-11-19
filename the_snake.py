@@ -185,7 +185,6 @@ def handle_keys(snake):
 
 def main():
     """Инициализация игры."""
-
     snake = Snake(screen)
     apple = Apple(screen)
     grid = GameGrid(screen)
