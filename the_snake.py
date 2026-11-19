@@ -54,6 +54,7 @@ clock = pygame.time.Clock()
 
 class GameObject:
     """Родительский класс."""
+
     def __init__(
             self,
             position,
@@ -65,6 +66,7 @@ class GameObject:
 
 class Snake(GameObject):
     """Класс для объекта змейка."""
+
     def __init__(
             self,
             surface,
@@ -122,7 +124,7 @@ class Snake(GameObject):
         self.next_direction = None
 
     def draw(self, surface=None):
-        """Отрисовка головы и тела змейки"""
+        """Отрисовка головы и тела Змейки"""
         if surface is None:
             surface = self.surface
         for segment_index, (col, row) in enumerate(self.positions):
@@ -144,6 +146,7 @@ class Snake(GameObject):
 
 class Apple(GameObject):
     """Класс для объекта яблоко."""
+
     def __init__(
             self,
             surface,
@@ -195,6 +198,7 @@ class Apple(GameObject):
 
 class GameGrid:
     """Класс для объекта сетка."""
+
     def __init__(
             self,
             surface,
@@ -218,17 +222,61 @@ class GameGrid:
                              (0, vector_y), (self.width, vector_y))
 
 
-def init_game(width, height, caption="Змейка"):
-    """Инициализирует Pygame и создаёт экран."""
+def handle_events(snake, running):
+    """Обработка событий: закрытие окна и нажатия клавиш."""
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP and snake.direction != DOWN:
+                snake.change_direction(UP)
+            elif event.key == pygame.K_DOWN and snake.direction != UP:
+                snake.change_direction(DOWN)
+            elif event.key == pygame.K_LEFT and snake.direction != RIGHT:
+                snake.change_direction(LEFT)
+            elif event.key == pygame.K_RIGHT and snake.direction != LEFT:
+                snake.change_direction(RIGHT)
+    return running
+
+
+def update_game(snake, apple, base_speed, speed_step, max_speed):
+    """Обновление логики игры: движение, ускорение, столкновения, поедание."""
+    snake.move()
+    acceleration_level = snake.get_speed_level(base_length=5, step_size=1)
+    current_speed = base_speed + acceleration_level * speed_step
+    current_speed = min(current_speed, max_speed)
+    if snake.get_head_position() == apple.position:
+        snake.length += 1
+        apple.position = apple.randomize_position(
+            snake_positions=snake.positions)
+    head = snake.get_head_position()
+    if head in snake.positions[1:]:
+        snake.reset()
+        apple.position = apple.randomize_position(
+            snake_positions=snake.positions)
+    return current_speed
+
+
+def draw_game(screen, snake, apple, grid):
+    """Отрисовка всех объектов: фон, сетка, змейка, яблоко."""
+    screen.fill(BOARD_BACKGROUND_COLOR)
+    grid.draw()
+    snake.draw()
+    apple.draw()
+    pygame.display.flip()
+
+
+def init_game(width, height):
+    """Инициализация игры."""
     pygame.init()
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption(caption)
+    pygame.display.set_caption('Змейка')
     clock = pygame.time.Clock()
     return screen, clock
 
 
 def create_objects(screen, width, height, grid_size):
-    """Создаёт игровые объекты: змейку, яблоко, сетку."""
+    """Добавление объектов в игру."""
     snake = Snake(screen)
     apple = Apple(screen)
     grid = GameGrid(screen, width, height, grid_size)
@@ -236,48 +284,22 @@ def create_objects(screen, width, height, grid_size):
 
 
 def setup_speed():
-    """Возвращает параметры скорости."""
+    """Настройка скорости змейки."""
     return BASE_SPEED, SPEED_STEP, MAX_SPEED
 
 
 def main():
-    """Сбор компонентов для игры."""
+    """Точка входа: инициализация и игровой цикл."""
     screen, clock = init_game(SCREEN_WIDTH, SCREEN_HEIGHT)
-    snake, apple, grid = create_objects(screen, SCREEN_WIDTH,
-                                        SCREEN_HEIGHT, GRID_SIZE)
+    snake, apple, grid = create_objects(screen,
+                                        SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE)
     base_speed, speed_step, max_speed = setup_speed()
     running = True
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and snake.direction != DOWN:
-                    snake.change_direction(UP)
-                elif event.key == pygame.K_DOWN and snake.direction != UP:
-                    snake.change_direction(DOWN)
-                elif event.key == pygame.K_LEFT and snake.direction != RIGHT:
-                    snake.change_direction(LEFT)
-                elif event.key == pygame.K_RIGHT and snake.direction != LEFT:
-                    snake.change_direction(RIGHT)
-        snake.move()
-        acceleration_level = snake.get_speed_level(base_length=5, step_size=1)
-        current_speed = base_speed + acceleration_level * speed_step
-        current_speed = min(current_speed, max_speed)
-        if snake.get_head_position() == apple.position:
-            snake.length += 1
-            apple.position = apple.randomize_position(
-                snake_positions=snake.positions)
-        head = snake.get_head_position()
-        if head in snake.positions[1:]:
-            snake.reset()
-            apple.position = apple.randomize_position(
-                snake_positions=snake.positions)
-        screen.fill(BOARD_BACKGROUND_COLOR)
-        grid.draw()
-        snake.draw()
-        apple.draw()
-        pygame.display.flip()
+        running = handle_events(snake, running)
+        current_speed = update_game(
+            snake, apple, base_speed, speed_step, max_speed)
+        draw_game(screen, snake, apple, grid)
         clock.tick(current_speed)
     pygame.quit()
 
