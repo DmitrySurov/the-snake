@@ -1,6 +1,6 @@
-import pygame
-
 from random import randrange
+
+import pygame
 
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
 GRID_SIZE = 20
@@ -153,6 +153,7 @@ class Apple(GameObject):
 
 class GameGrid:
     """Класс для создания ячеек."""
+
     def __init__(self, surface=screen):
         self.surface = surface
 
@@ -183,6 +184,8 @@ def handle_keys(snake):
 
 
 def main():
+    """Инициализация игры."""
+
     snake = Snake(screen)
     apple = Apple(screen)
     grid = GameGrid(screen)
