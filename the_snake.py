@@ -1,5 +1,6 @@
-import pygame
 from random import randrange
+
+import pygame
 
 # Константы для размеров поля и сетки:
 SCREEN_WIDTH, SCREEN_HEIGHT = 640, 480
@@ -37,6 +38,10 @@ RADIUS = GRID_SIZE // 2
 # Скорость движения змейки:
 SPEED = 10
 
+BASE_SPEED = 10
+SPEED_STEP = 2
+MAX_SPEED = 60
+
 # Настройка игрового окна:
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
@@ -48,24 +53,27 @@ clock = pygame.time.Clock()
 
 
 class GameObject:
+    """Родительский класс."""
     def __init__(
             self,
             position,
             body_color
-            ):
+    ):
         self.position = position
         self.body_color = body_color
 
 
 class Snake(GameObject):
+    """Класс для объекта змейка."""
     def __init__(
             self,
             surface,
             body_color=None
-            ):
-        super().__init__(position=(0, 0),
-                         body_color=body_color or SNAKE_BODY_COLOR
-                         )
+    ):
+        super().__init__(
+            position=(0, 0),
+            body_color=body_color or SNAKE_BODY_COLOR
+        )
         self.length = 1
         self.direction = RIGHT
         self.next_direction = None
@@ -83,9 +91,11 @@ class Snake(GameObject):
         return wight_pos, height_pos
 
     def get_head_position(self):
+        """Координаты головы змейки."""
         return self.positions[0]
 
     def change_direction(self, new_direction):
+        """Предотвращение разворота на 180 градусов."""
         if (new_direction[0] * -1, new_direction[1] * -1) != self.direction:
             self.direction = new_direction
 
@@ -133,15 +143,16 @@ class Snake(GameObject):
 
 
 class Apple(GameObject):
+    """Класс для объекта яблоко."""
     def __init__(
             self,
             surface,
             body_color=None
-            ):
+    ):
         super().__init__(
             position=(0, 0),
             body_color=body_color or APPLE_COLOR
-            )
+        )
         self.surface = surface
         self.position = self.randomize_position()
 
@@ -183,19 +194,21 @@ class Apple(GameObject):
 
 
 class GameGrid:
+    """Класс для объекта сетка."""
     def __init__(
             self,
             surface,
             width,
             height,
-            size):
+            size
+    ):
         self.surface = surface
         self.width = width
         self.height = height
         self.size = size
 
     def draw(self):
-        """Отрисовка поля."""
+        """Отрисовка сетки на поле."""
         color = (200, 200, 200)
         for vector_x in range(0, self.width, self.size):
             pygame.draw.line(self.surface, color,
@@ -205,17 +218,34 @@ class GameGrid:
                              (0, vector_y), (self.width, vector_y))
 
 
-def main():
+def init_game(width, height, caption="Змейка"):
+    """Инициализирует Pygame и создаёт экран."""
     pygame.init()
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Змейка")
+    screen = pygame.display.set_mode((width, height))
+    pygame.display.set_caption(caption)
     clock = pygame.time.Clock()
+    return screen, clock
+
+
+def create_objects(screen, width, height, grid_size):
+    """Создаёт игровые объекты: змейку, яблоко, сетку."""
     snake = Snake(screen)
     apple = Apple(screen)
-    base_speed = 10
-    speed_step = 2
-    max_speed = 60
-    grid = GameGrid(screen, SCREEN_WIDTH, SCREEN_HEIGHT, GRID_SIZE)
+    grid = GameGrid(screen, width, height, grid_size)
+    return snake, apple, grid
+
+
+def setup_speed():
+    """Возвращает параметры скорости."""
+    return BASE_SPEED, SPEED_STEP, MAX_SPEED
+
+
+def main():
+    """Сбор компонентов для игры."""
+    screen, clock = init_game(SCREEN_WIDTH, SCREEN_HEIGHT)
+    snake, apple, grid = create_objects(screen, SCREEN_WIDTH,
+                                        SCREEN_HEIGHT, GRID_SIZE)
+    base_speed, speed_step, max_speed = setup_speed()
     running = True
     while running:
         for event in pygame.event.get():
