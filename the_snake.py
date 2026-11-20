@@ -17,6 +17,10 @@ BORDER_COLOR = (107, 107, 148)
 APPLE_COLOR = (255, 0, 0)
 SNAKE_HEAD_COLOR = (255, 122, 0)
 SNAKE_BODY_COLOR = (255, 100, 0)
+STEM_COLOR = (101, 67, 33)
+LEAF_COLOR = (0, 128, 0)
+STEM_WIDTH, STEM_HEIGHT = 4, 6
+LEAF_WIDTH, LEAF_HEIGHT = 8, 4
 RADIUS = GRID_SIZE // 2
 SPEED = 10
 
@@ -38,7 +42,6 @@ class GameObject:
 
     def draw(self, surface=None):
         """Родительский метод для отрисовки."""
-        pass
 
 
 class Snake(GameObject):
@@ -67,7 +70,7 @@ class Snake(GameObject):
         self.positions.insert(0, new_head)
         if len(self.positions) > self.length:
             self.positions.pop()
-        self.position = self.positions[0]
+        self.position = self.get_head_position()
 
     def reset(self):
         """Сброс змейки при столкновении."""
@@ -112,10 +115,16 @@ class Snake(GameObject):
 class Apple(GameObject):
     """Яблоко: наследуется от GameObject."""
 
-    def __init__(self, surface=screen, body_color=APPLE_COLOR):
+    def __init__(
+            self,
+            snake_positions=None,
+            surface=screen,
+            body_color=APPLE_COLOR
+    ):
         super().__init__(body_color=body_color)
         self.surface = surface
-        self.position = self.randomize_position()
+        self.position = self.randomize_position(
+            snake_positions=snake_positions)
 
     def randomize_position(self, snake_positions=None):
         """Появление яблока на поле."""
@@ -139,16 +148,14 @@ class Apple(GameObject):
         center_y = screen_y + GRID_SIZE // 2
         pygame.draw.circle(surface, self.body_color,
                            (center_x, center_y), RADIUS)
-        stem_w, stem_h = 4, 6
-        stem_x = center_x - stem_w // 2
+        stem_x = center_x - STEM_WIDTH // 2
         stem_y = screen_y + 2
-        pygame.draw.rect(surface, (101, 67, 33),
-                         (stem_x, stem_y, stem_w, stem_h))
-        leaf_w, leaf_h = 8, 4
-        leaf_x = stem_x + stem_w
-        leaf_y = stem_y - leaf_h // 2
-        pygame.draw.ellipse(surface, (0, 128, 0),
-                            (leaf_x, leaf_y, leaf_w, leaf_h))
+        pygame.draw.rect(surface, STEM_COLOR,
+                         (stem_x, stem_y, STEM_WIDTH, STEM_HEIGHT))
+        leaf_x = stem_x + STEM_WIDTH
+        leaf_y = stem_y - LEAF_HEIGHT // 2
+        pygame.draw.ellipse(surface, LEAF_COLOR,
+                            (leaf_x, leaf_y, LEAF_WIDTH, LEAF_HEIGHT))
 
 
 class GameGrid:
@@ -186,7 +193,7 @@ def handle_keys(snake):
 def main():
     """Инициализация игры."""
     snake = Snake(screen)
-    apple = Apple(screen)
+    apple = Apple(snake_positions=snake.positions, surface=screen)
     grid = GameGrid(screen)
     base_speed = 10
     speed_step = 2
@@ -203,7 +210,7 @@ def main():
             apple.position = apple.randomize_position(
                 snake_positions=snake.positions)
         head = snake.positions[0]
-        if head in snake.positions[1:]:
+        if len(snake.positions) > 3 and head in snake.positions[1:]:
             snake.reset()
             apple.position = apple.randomize_position(
                 snake_positions=snake.positions)
